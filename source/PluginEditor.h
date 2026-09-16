@@ -1,45 +1,38 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "PluginProcessor.h"
+#include "BinaryData.h"
+#include "melatonin_inspector/melatonin_inspector.h"
 
-class PluginProcessor : public juce::AudioProcessor
+class PluginEditor : public juce::AudioProcessorEditor
 {
 public:
-    PluginProcessor();
-    ~PluginProcessor() override;
+    explicit PluginEditor (PluginProcessor&);
+    ~PluginEditor() override;
 
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override;
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-
-    juce::AudioProcessorEditor* createEditor() override;
-    bool hasEditor() const override;
-
-    const juce::String getName() const override { return "DelayVST"; }
-    bool acceptsMidi() const override { return false; }
-    bool producesMidi() const override { return false; }
-    bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
-
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram (int) override {}
-    const juce::String getProgramName (int) override { return {}; }
-    void changeProgramName (int, const juce::String&) override {}
-
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
-
-    // Gerenciador de Parâmetros (Conecta os Sliders ao Processador)
-    juce::AudioProcessorValueTreeState apvts;
+    void paint (juce::Graphics&) override;
+    void resized() override;
 
 private:
-    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    PluginProcessor& processorRef;
 
-    // Buffer de Memória para guardar o áudio do atraso (Eco)
-    juce::AudioBuffer<float> delayBuffer;
-    int writePosition { 0 };
+    juce::Slider delayTimeSlider;
+    juce::Label  delayTimeLabel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
+    juce::Slider feedbackSlider;
+    juce::Label  feedbackLabel;
+
+    juce::Slider mixSlider;
+    juce::Label  mixLabel;
+
+    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    std::unique_ptr<SliderAttachment> delayTimeAttachment;
+    std::unique_ptr<SliderAttachment> feedbackAttachment;
+    std::unique_ptr<SliderAttachment> mixAttachment;
+
+    std::unique_ptr<melatonin::Inspector> inspector;
+    juce::TextButton inspectButton { "Inspect the UI" };
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };
