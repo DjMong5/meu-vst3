@@ -5,7 +5,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 {
     juce::ignoreUnused (processorRef);
 
-    // Configuração do Slider: Delay Time
+    // --- Configuração dos Sliders de Delay ---
+
+    // 1. Delay Time (Tempo de Eco)
     delayTimeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     delayTimeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
     addAndMakeVisible(delayTimeSlider);
@@ -14,7 +16,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     delayTimeLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(delayTimeLabel);
 
-    // Configuração do Slider: Feedback
+    // 2. Feedback (Repetições)
     feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
     addAndMakeVisible(feedbackSlider);
@@ -23,7 +25,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     feedbackLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(feedbackLabel);
 
-    // Configuração do Slider: Mix (Dry/Wet)
+    // 3. Mix (Dry / Wet)
     mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
     addAndMakeVisible(mixSlider);
@@ -32,7 +34,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     mixLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(mixLabel);
 
-    // Botão de inspeção da Melatonin
+    // --- Botão do Melatonin Inspector ---
     addAndMakeVisible (inspectButton);
     inspectButton.onClick = [&] {
         if (!inspector)
@@ -43,7 +45,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         inspector->setVisible (true);
     };
 
-    // Tamanho total da janela do plugin
+    // Define o tamanho da janela do plugin
     setSize (500, 300);
 }
 
@@ -65,15 +67,15 @@ void PluginEditor::paint (juce::Graphics& g)
 void PluginEditor::resized()
 {
     auto area = getLocalBounds();
-    
-    // Espaço para o título e topo
+
+    // Espaço reservado para o título
     area.removeFromTop(40);
-    
-    // Reserva a parte inferior para o botão do inspector
+
+    // Espaço reservado para o botão do inspector no rodapé
     auto bottomArea = area.removeFromBottom(40);
     inspectButton.setBounds (bottomArea.withSizeKeepingCentre(120, 30));
 
-    // Divide a área central igualmente entre os 3 sliders
+    // Divide a área central em 3 colunas iguais para os Sliders
     auto sliderWidth = area.getWidth() / 3;
 
     auto delayArea = area.removeFromLeft(sliderWidth);
