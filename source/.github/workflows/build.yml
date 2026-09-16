@@ -1,0 +1,27 @@
+name: Compilar VST3 para Windows
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Configurar CMake
+      run: cmake -B build
+
+    - name: Compilar Plugin (Release)
+      run: cmake --build build --config Release
+
+    - name: Salvar o VST3 para Download
+      uses: actions/upload-artifact@v3
+      with:
+        name: MeuPlugin-Windows-VST3
+        path: build/Pamplejuce_artefacts/Release/VST3/

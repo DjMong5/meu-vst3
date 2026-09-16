@@ -120,7 +120,30 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
   #endif
 }
 
-void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+void PluginProcessor::void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+                                     juce::MidiBuffer& midiMessages)
+{
+    juce::ignoreUnused (midiMessages);
+
+    // Limpa canais de saída extras para evitar ruídos
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear (i, 0, buffer.getNumSamples());
+
+    // Loop que processa as amostras de áudio
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    {
+        auto* channelData = buffer.getWritePointer (channel);
+
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            // Reduz o volume do áudio pela metade (multiplica por 0.5)
+            channelData[sample] *= 0.5f; 
+        }
+    }
+} (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
