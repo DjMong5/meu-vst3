@@ -1,25 +1,16 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-//==============================================================================
 PluginProcessor::PluginProcessor()
      : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       ),
+                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
        apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
 }
 
-PluginProcessor::~PluginProcessor()
-{
-}
+PluginProcessor::~PluginProcessor() {}
 
-// Layout de Parâmetros (Controles do Delay)
 juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
@@ -39,110 +30,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     return layout;
 }
 
-//==============================================================================
-const juce::String PluginProcessor::getName() const
-{
-    return JucePlugin_Name;
-}
-
-bool PluginProcessor::acceptsMidi() const
-{
-   #if JucePlugin_WantsMidiInput
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-bool PluginProcessor::producesMidi() const
-{
-   #if JucePlugin_ProducesMidiOutput
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-bool PluginProcessor::isMidiEffect() const
-{
-   #if JucePlugin_IsMidiEffect
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-double PluginProcessor::getTailLengthSeconds() const
-{
-    return 0.0;
-}
-
-int PluginProcessor::getNumPrograms()
-{
-    return 1;
-}
-
-int PluginProcessor::getCurrentProgram()
-{
-    return 0;
-}
-
-void PluginProcessor::setCurrentProgram (int index)
-{
-    juce::ignoreUnused (index);
-}
-
-const juce::String PluginProcessor::getProgramName (int index)
-{
-    juce::ignoreUnused (index);
-    return "Default";
-}
-
-void PluginProcessor::changeProgramName (int index, const juce::String& newName)
-{
-    juce::ignoreUnused (index, newName);
-}
-
-//==============================================================================
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     juce::ignoreUnused (samplesPerBlock);
-
-    // Reserva 5 segundos de memória para o buffer do delay
     auto maxDelayInSeconds = 5.0;
     auto bufferLength = static_cast<int>(sampleRate * maxDelayInSeconds);
 
     delayBuffer.setSize (getTotalNumInputChannels(), bufferLength);
     delayBuffer.clear();
-
     writePosition = 0;
 }
 
-void PluginProcessor::releaseResources()
-{
-}
+void PluginProcessor::releaseResources() {}
 
 bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
-    return true;
-  #endif
+    return layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet();
 }
 
-//==============================================================================
-// LÓGICA DO DELAY (BUFFER CIRCULAR)
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
@@ -154,15 +63,12 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // Carrega os valores atuais dos controles da interface
     float delayTimeMs = apvts.getRawParameterValue ("delayTime")->load();
     float feedback    = apvts.getRawParameterValue ("feedback")->load();
     float mix         = apvts.getRawParameterValue ("mix")->load();
 
     int numSamples = buffer.getNumSamples();
     int delayBufferLength = delayBuffer.getNumSamples();
-
-    // Converte milissegundos em amostras de áudio
     int delayInSamples = static_cast<int> ((delayTimeMs / 1000.0f) * getSampleRate());
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
@@ -176,17 +82,13 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         {
             const float cleanSample = channelData[sample];
 
-            // Calcula onde ler no passado
             int readPosition = localWritePos - delayInSamples;
             if (readPosition < 0)
                 readPosition += delayBufferLength;
 
             float delayedSample = delayData[readPosition];
 
-            // Escreve a entrada atual + feedback no buffer
             delayData[localWritePos] = cleanSample + (delayedSample * feedback);
-
-            // Mistura som limpo (Dry) com atrasado (Wet)
             channelData[sample] = (cleanSample * (1.0f - mix)) + (delayedSample * mix);
 
             localWritePos++;
@@ -199,18 +101,9 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     writePosition %= delayBufferLength;
 }
 
-//==============================================================================
-bool PluginProcessor::hasEditor() const
-{
-    return true;
-}
+bool PluginProcessor::hasEditor() const { return true; }
+juce::AudioProcessorEditor* PluginProcessor::createEditor() { return new PluginEditor (*this); }
 
-juce::AudioProcessorEditor* PluginProcessor::createEditor()
-{
-    return new PluginEditor (*this);
-}
-
-//==============================================================================
 void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
@@ -226,7 +119,6 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
             apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
-//==============================================================================
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new PluginProcessor();
