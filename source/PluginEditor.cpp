@@ -5,22 +5,46 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 {
     juce::ignoreUnused (processorRef);
 
-    addAndMakeVisible (inspectButton);
+    // Configuração do Slider: Delay Time
+    delayTimeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    delayTimeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
+    addAndMakeVisible(delayTimeSlider);
 
-    // this chunk of code instantiates and opens the melatonin inspector
+    delayTimeLabel.setText("Delay Time", juce::dontSendNotification);
+    delayTimeLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(delayTimeLabel);
+
+    // Configuração do Slider: Feedback
+    feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
+    addAndMakeVisible(feedbackSlider);
+
+    feedbackLabel.setText("Feedback", juce::dontSendNotification);
+    feedbackLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(feedbackLabel);
+
+    // Configuração do Slider: Mix (Dry/Wet)
+    mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
+    addAndMakeVisible(mixSlider);
+
+    mixLabel.setText("Mix", juce::dontSendNotification);
+    mixLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(mixLabel);
+
+    // Botão de inspeção da Melatonin
+    addAndMakeVisible (inspectButton);
     inspectButton.onClick = [&] {
         if (!inspector)
         {
             inspector = std::make_unique<melatonin::Inspector> (*this);
             inspector->onClose = [this]() { inspector.reset(); };
         }
-
         inspector->setVisible (true);
     };
 
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to be.
-    setSize (400, 300);
+    // Tamanho total da janela do plugin
+    setSize (500, 300);
 }
 
 PluginEditor::~PluginEditor()
@@ -29,20 +53,38 @@ PluginEditor::~PluginEditor()
 
 void PluginEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    // Fundo escuro
+    g.fillAll (juce::Colours::darkgrey);
 
-    auto area = getLocalBounds();
+    // Título do Plugin
     g.setColour (juce::Colours::white);
-    g.setFont (16.0f);
-    auto helloWorld = juce::String ("Hello from ") + PRODUCT_NAME_WITHOUT_VERSION + " v" VERSION + " running in " + CMAKE_BUILD_TYPE;
-    g.drawText (helloWorld, area.removeFromTop (150), juce::Justification::centred, false);
+    g.setFont (20.0f);
+    g.drawText ("DELAY PLUGIN", getLocalBounds().removeFromTop(40), juce::Justification::centred, false);
 }
 
 void PluginEditor::resized()
 {
-    // layout the positions of your child components here
     auto area = getLocalBounds();
-    area.removeFromBottom(50);
-    inspectButton.setBounds (getLocalBounds().withSizeKeepingCentre(100, 50));
+    
+    // Espaço para o título e topo
+    area.removeFromTop(40);
+    
+    // Reserva a parte inferior para o botão do inspector
+    auto bottomArea = area.removeFromBottom(40);
+    inspectButton.setBounds (bottomArea.withSizeKeepingCentre(120, 30));
+
+    // Divide a área central igualmente entre os 3 sliders
+    auto sliderWidth = area.getWidth() / 3;
+
+    auto delayArea = area.removeFromLeft(sliderWidth);
+    delayTimeLabel.setBounds(delayArea.removeFromTop(20));
+    delayTimeSlider.setBounds(delayArea);
+
+    auto feedbackArea = area.removeFromLeft(sliderWidth);
+    feedbackLabel.setBounds(feedbackArea.removeFromTop(20));
+    feedbackSlider.setBounds(feedbackArea);
+
+    auto mixArea = area;
+    mixLabel.setBounds(mixArea.removeFromTop(20));
+    mixSlider.setBounds(mixArea);
 }
