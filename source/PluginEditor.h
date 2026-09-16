@@ -16,10 +16,27 @@ public:
     void resized() override;
 
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
     PluginProcessor& processorRef;
+
+    // Sliders e Labels do Delay
+    juce::Slider delayTimeSlider;
+    juce::Label  delayTimeLabel;
+
+    juce::Slider feedbackSlider;
+    juce::Label  feedbackLabel;
+
+    juce::Slider mixSlider;
+    juce::Label  mixLabel;
+
+    // Conexões para vincular os Sliders aos parâmetros da Tree State (APVTS)
+    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    std::unique_ptr<SliderAttachment> delayTimeAttachment;
+    std::unique_ptr<SliderAttachment> feedbackAttachment;
+    std::unique_ptr<SliderAttachment> mixAttachment;
+
+    // Ferramentas de UI
     std::unique_ptr<melatonin::Inspector> inspector;
     juce::TextButton inspectButton { "Inspect the UI" };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };
