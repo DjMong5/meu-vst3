@@ -1,92 +1,45 @@
-#include "PluginEditor.h"
+#pragma once
 
-PluginEditor::PluginEditor (PluginProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p)
+#include <juce_audio_processors/juce_audio_processors.h>
+
+class PluginProcessor : public juce::AudioProcessor
 {
-    juce::ignoreUnused (processorRef);
+public:
+    PluginProcessor();
+    ~PluginProcessor() override;
 
-    // --- Configuração dos Sliders de Delay ---
+    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void releaseResources() override;
+    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
-    // 1. Delay Time (Tempo de Eco)
-    delayTimeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    delayTimeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
-    addAndMakeVisible(delayTimeSlider);
+    juce::AudioProcessorEditor* createEditor() override;
+    bool hasEditor() const override;
 
-    delayTimeLabel.setText("Delay Time", juce::dontSendNotification);
-    delayTimeLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(delayTimeLabel);
+    const juce::String getName() const override { return "DelayVST"; }
+    bool acceptsMidi() const override { return false; }
+    bool producesMidi() const override { return false; }
+    bool isMidiEffect() const override { return false; }
+    double getTailLengthSeconds() const override { return 0.0; }
 
-    // 2. Feedback (Repetições)
-    feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
-    addAndMakeVisible(feedbackSlider);
+    int getNumPrograms() override { return 1; }
+    int getCurrentProgram() override { return 0; }
+    void setCurrentProgram (int) override {}
+    const juce::String getProgramName (int) override { return {}; }
+    void changeProgramName (int, const juce::String&) override {}
 
-    feedbackLabel.setText("Feedback", juce::dontSendNotification);
-    feedbackLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(feedbackLabel);
+    void getStateInformation (juce::MemoryBlock& destData) override;
+    void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // 3. Mix (Dry / Wet)
-    mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 20);
-    addAndMakeVisible(mixSlider);
+    // Gerenciador de Parâmetros
+    juce::AudioProcessorValueTreeState apvts;
 
-    mixLabel.setText("Mix", juce::dontSendNotification);
-    mixLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(mixLabel);
+private:
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    // --- Botão do Melatonin Inspector ---
-    addAndMakeVisible (inspectButton);
-    inspectButton.onClick = [&] {
-        if (!inspector)
-        {
-            inspector = std::make_unique<melatonin::Inspector> (*this);
-            inspector->onClose = [this]() { inspector.reset(); };
-        }
-        inspector->setVisible (true);
-    };
+    // Buffer de Memória do Eco
+    juce::AudioBuffer<float> delayBuffer;
+    int writePosition { 0 };
 
-    // Define o tamanho da janela do plugin
-    setSize (500, 300);
-}
-
-PluginEditor::~PluginEditor()
-{
-}
-
-void PluginEditor::paint (juce::Graphics& g)
-{
-    // Fundo escuro
-    g.fillAll (juce::Colours::darkgrey);
-
-    // Título do Plugin
-    g.setColour (juce::Colours::white);
-    g.setFont (20.0f);
-    g.drawText ("DELAY PLUGIN", getLocalBounds().removeFromTop(40), juce::Justification::centred, false);
-}
-
-void PluginEditor::resized()
-{
-    auto area = getLocalBounds();
-
-    // Espaço reservado para o título
-    area.removeFromTop(40);
-
-    // Espaço reservado para o botão do inspector no rodapé
-    auto bottomArea = area.removeFromBottom(40);
-    inspectButton.setBounds (bottomArea.withSizeKeepingCentre(120, 30));
-
-    // Divide a área central em 3 colunas iguais para os Sliders
-    auto sliderWidth = area.getWidth() / 3;
-
-    auto delayArea = area.removeFromLeft(sliderWidth);
-    delayTimeLabel.setBounds(delayArea.removeFromTop(20));
-    delayTimeSlider.setBounds(delayArea);
-
-    auto feedbackArea = area.removeFromLeft(sliderWidth);
-    feedbackLabel.setBounds(feedbackArea.removeFromTop(20));
-    feedbackSlider.setBounds(feedbackArea);
-
-    auto mixArea = area;
-    mixLabel.setBounds(mixArea.removeFromTop(20));
-    mixSlider.setBounds(mixArea);
-}
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
+};
